@@ -1,14 +1,24 @@
-use std::{fs::File, env::{Args, self}, io::{BufReader, BufRead, Error}};
+use std::{fs::File, env::{Args, self}, io::{BufReader, BufRead, Error}, collections::HashMap};
 
 const ARGS_IX_INPUT : usize = 1;
+const DEBUG : bool = true;
 
 macro_rules! debug {
     ($a:expr) => {
-        println!("{}",$a)
+        if DEBUG {
+            println!("{}",$a);
+        }
+    };
+    
+    ($a:expr, $b:expr) => {
+        if DEBUG {
+           println!($a, $b);
+        }
+
     };
 }
 
-fn main()  {
+fn main(){
     let input_file_path = env::args().nth(ARGS_IX_INPUT);
 
     if input_file_path.is_none() { 
@@ -23,7 +33,7 @@ fn main()  {
     }
 
     let input_file = input_file.unwrap();
-    let answer = get_sum_part1(input_file);
+    let answer = get_sum_part2(input_file);
 
     println!("The answer is {}", answer);
 }
@@ -40,6 +50,48 @@ fn get_sum_part1(input_file: File) -> usize {
     return sum;
 }
 
+fn get_sum_part2(input_file: File) -> usize {
+    
+    let mut digit_map: HashMap<&str, &str> = HashMap::new();
+    digit_map.insert("one","1");
+    digit_map.insert("two","2");
+    digit_map.insert("three","3");
+    digit_map.insert("four","4");
+    digit_map.insert("five","5");
+    digit_map.insert("six","6");
+    digit_map.insert("seven","7");
+    digit_map.insert("eight","8");
+    digit_map.insert("nine","9");
+    digit_map.insert("zero","0");
+   
+    let input_file = BufReader::new(input_file);
+
+    let mut sum : usize = 0; 
+    for line in input_file.lines() {
+        
+        let line = map_line_words(line.unwrap(), &digit_map);
+
+        sum = sum + get_line_value(line);
+    }
+
+    return sum;
+
+}
+
+fn map_line_words(line: String, map: &HashMap<&str,&str>) -> String {
+ 
+    debug!("source line: {}", line);
+
+    let mut result = String::from(line);
+
+    for key in map.keys() {
+        debug!(key);        
+        result = result.replace(key, map[key]);
+    }
+    debug!("mapped line: {}", result);
+    
+    return result;
+}
 
 fn get_line_value(line : String) -> usize {
    
