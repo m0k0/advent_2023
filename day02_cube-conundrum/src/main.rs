@@ -41,9 +41,9 @@ fn main(){
 
         debug!(line);
 
-        if let Some(game_id) = process_game(line, &limits) {
-            debug!("OK");
-            answer = answer + game_id;
+        if let Some(game_result) = process_game_part2(line) {
+            debug!("result: {}", game_result);
+            answer = answer + game_result;
         }
     }
     
@@ -66,7 +66,7 @@ fn read_input_lines(input_file_path: String) -> Lines<BufReader<File>> {
 
 // takes a game string and 
 // tries to return the game number
-fn process_game(line: String, limits: &HashMap<&str, usize>) -> Option<usize> {
+fn process_game_part1(line: String, limits: &HashMap<&str, usize>) -> Option<usize> {
 
 
     let game_data: Vec<&str> = line.split(":").collect();
@@ -90,6 +90,79 @@ fn process_game(line: String, limits: &HashMap<&str, usize>) -> Option<usize> {
     return game_id;
 
 }
+
+// takes a game string and 
+// returns its "power" 
+fn process_game_part2(line: String) -> Option<usize> {
+
+    let game_data: Vec<&str> = line.split(":").collect();
+
+    let game_id_str = game_data[0].replace("Game ", "");
+
+    let game_id: Option<usize> = match game_id_str.parse() {
+       Ok(id) => Some(id),
+       Err(_) => None
+    };
+
+    
+    let set_data = game_data[1].split(";");
+    
+    let mut minimum_store: HashMap<&str, usize> = HashMap::new();
+
+    for set in set_data { 
+        apply_minimum_cubes(set, &mut minimum_store);
+    }
+
+    let mut power: usize = 1;
+    for (colour, minimum) in minimum_store {
+        
+        debug!(format!("min {colour}: {minimum}"));
+
+        power = power * minimum;
+
+    }
+
+    return Some(power);
+
+}
+
+fn apply_minimum_cubes<'a>(set_spec: &'a str, minimum_store: &mut HashMap<&'a str,usize>){
+
+    
+    let set_data = set_spec.split(",");
+
+    debug!("\t {}",set_spec);
+
+    for set_part in set_data {
+    
+        //debug!("set part: {}", set_part);
+        let set_part_components: Vec<&str> = set_part.trim().split(" ").collect();
+
+        let amount: usize = match set_part_components[0].parse() {
+            Ok(value) => value,
+            Err(_) => {return} // invalid amount
+        };
+
+        //debug!("set amount: {}", amount);
+
+        let colour = set_part_components[1];
+       
+        
+        minimum_store.entry(colour)
+            .and_modify(|e| { 
+                if amount > *e {
+                    *e = amount;
+                }
+            })
+            .or_insert(amount);
+        
+    }
+
+    return;
+
+}
+
+
 
 fn is_set_possible(set_spec: &str, limits: &HashMap<&str, usize>) -> bool {
     
