@@ -1,4 +1,4 @@
-use std::{fs::File, env::{Args, self}, io::{BufReader, BufRead, Error}, collections::HashMap};
+use std::{fs::File, env::{Args, self}, io::{BufReader, BufRead, Error}, collections::HashMap, array};
 
 const ARGS_IX_INPUT : usize = 1;
 const DEBUG : bool = true;
@@ -52,18 +52,19 @@ fn get_sum_part1(input_file: File) -> usize {
 
 fn get_sum_part2(input_file: File) -> usize {
     
-    let mut digit_map: HashMap<&str, &str> = HashMap::new();
-    digit_map.insert("one","1");
-    digit_map.insert("two","2");
-    digit_map.insert("three","3");
-    digit_map.insert("four","4");
-    digit_map.insert("five","5");
-    digit_map.insert("six","6");
-    digit_map.insert("seven","7");
-    digit_map.insert("eight","8");
-    digit_map.insert("nine","9");
-    digit_map.insert("zero","0");
-   
+    let digit_map = [
+        "zero",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine"
+    ];
+
     let input_file = BufReader::new(input_file);
 
     let mut sum : usize = 0; 
@@ -78,15 +79,16 @@ fn get_sum_part2(input_file: File) -> usize {
 
 }
 
-fn map_line_words(line: String, map: &HashMap<&str,&str>) -> String {
+
+fn map_line_words(line: String, map: &[&str]) -> String {
  
     debug!("source line: {}", line);
 
     let mut result = String::from(line);
 
-    for key in map.keys() {
-        debug!(key);        
-        result = result.replace(key, map[key]);
+    for (ix, value) in map.iter().enumerate() {
+        //debug!(value);        
+        result = result.replace(value, ix.to_string().as_str());
     }
     debug!("mapped line: {}", result);
     
