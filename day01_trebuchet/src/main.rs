@@ -23,6 +23,13 @@ fn main()  {
     }
 
     let input_file = input_file.unwrap();
+    let answer = get_sum_part1(input_file);
+
+    println!("The answer is {}", answer);
+}
+
+fn get_sum_part1(input_file: File) -> usize {
+    
     let input_file = BufReader::new(input_file);
 
     let mut sum : usize = 0; 
@@ -30,9 +37,9 @@ fn main()  {
         
         sum = sum + get_line_value(line.unwrap());
     }
-
-    println!("The answer is {}", sum);
+    return sum;
 }
+
 
 fn get_line_value(line : String) -> usize {
    
