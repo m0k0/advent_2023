@@ -1,4 +1,4 @@
-use std::{fs::File, env::{Args, self}, io::{BufReader, BufRead, Error}, collections::HashMap, array};
+use std::{fs::File, env::{Args, self}, io::{BufReader, BufRead, Error}, collections::HashMap, array, ops::Index};
 
 const ARGS_IX_INPUT : usize = 1;
 const DEBUG : bool = true;
@@ -33,24 +33,12 @@ fn main(){
     }
 
     let input_file = input_file.unwrap();
-    let answer = get_sum_part2(input_file);
+    let answer = get_sum(input_file);
 
     println!("The answer is {}", answer);
 }
 
-fn get_sum_part1(input_file: File) -> usize {
-    
-    let input_file = BufReader::new(input_file);
-
-    let mut sum : usize = 0; 
-    for line in input_file.lines() {
-        
-        sum = sum + get_line_value(line.unwrap());
-    }
-    return sum;
-}
-
-fn get_sum_part2(input_file: File) -> usize {
+fn get_sum(input_file: File) -> usize {
     
     let digit_map = [
         "zero",
@@ -69,15 +57,13 @@ fn get_sum_part2(input_file: File) -> usize {
 
     let mut sum : usize = 0; 
     for line in input_file.lines() {
-        
-        let line = map_line_words(line.unwrap(), &digit_map);
-
-        sum = sum + get_line_value(line);
+        sum = sum + get_line_value_part2(line.unwrap(), &digit_map);
     }
 
     return sum;
 
 }
+
 
 
 fn map_line_words(line: String, map: &[&str]) -> String {
@@ -114,6 +100,83 @@ fn get_line_value(line : String) -> usize {
         } else {
             last_digit_char = c;
         }
+        
+    }
+    if first_digit_char == '\0' {
+        return 0;
+    } 
+    let mut digits_text = String::from("");
+    digits_text.push(first_digit_char);
+    if last_digit_char != '\0' {
+        digits_text.push(last_digit_char);
+    } else {
+        digits_text.push(first_digit_char);
+    }
+    debug!(digits_text);
+
+    let result = match digits_text.parse::<usize>() {
+        Ok(value) => value,
+        Err(_) => 0
+    };
+
+    debug!(result);
+    
+    return result;
+    
+}
+
+fn map_digit_word(s : String, map: &[&str]) -> Option<usize> {
+     
+    for (ix, word) in map.iter().enumerate() {
+        if s.contains(*word) {
+            return Some(ix);
+        }
+    }
+    return None;
+
+}
+
+fn get_line_value_part2(line : String, map: &[&str]) -> usize {
+   
+    let mut first_digit_char = '\0';
+    let mut last_digit_char : char = '\0';
+
+    let mut digit_word_buffer : String = String::new();
+
+    debug!(line);
+
+    let line_chars: Vec<char> = line.chars().collect();
+    let mut line_ix = 0;
+
+    while line_ix < line_chars.len() {
+        
+        let mut digit_char = line_chars[line_ix];
+
+        digit_word_buffer.push(digit_char);
+
+        //debug!("buffer: {}", digit_word_buffer);
+
+        if let Some(digit) = map_digit_word(digit_word_buffer.to_string(), map) {
+            //debug!("found word: {}", digit_word_buffer);
+            digit_char = digit.to_string().chars().nth(0).unwrap();
+            //debug!("converted to: {}", digit_char);
+            digit_word_buffer = String::new();
+            line_ix = line_ix - 1;
+        }        
+        if digit_char.is_numeric() {
+             
+            if first_digit_char == '\0' {
+                first_digit_char = digit_char;
+            } else {
+                last_digit_char = digit_char;
+            }
+            digit_word_buffer = String::new();
+        }
+
+        //debug!("char: {}", digit_char);
+
+        line_ix = line_ix + 1;
+
         
     }
     if first_digit_char == '\0' {
