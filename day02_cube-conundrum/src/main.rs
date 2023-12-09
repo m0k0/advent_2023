@@ -37,7 +37,12 @@ fn main(){
 
     for line in read_input_lines(input_file_path) {
         
-        if let Some(game_id) = process_game(line.unwrap(), &limits) {
+        let line = line.unwrap();
+
+        debug!(line);
+
+        if let Some(game_id) = process_game(line, &limits) {
+            debug!("OK");
             answer = answer + game_id;
         }
     }
@@ -73,16 +78,51 @@ fn process_game(line: String, limits: &HashMap<&str, usize>) -> Option<usize> {
        Err(_) => None
     };
 
-
-
-
-
-
-
+    
+    let set_data = game_data[1].split(";");
+    
+    for set in set_data { 
+        if !is_set_possible(set, limits) {
+            return None;
+        }
+    }
 
     return game_id;
 
 }
 
+fn is_set_possible(set_spec: &str, limits: &HashMap<&str, usize>) -> bool {
+    
+    let set_data = set_spec.split(",");
+    debug!("\t {}",set_spec);
 
+    for set_part in set_data {
+    
+        //debug!("set part: {}", set_part);
+        let set_part_components: Vec<&str> = set_part.trim().split(" ").collect();
+
+        let amount: usize = match set_part_components[0].parse() {
+            Ok(value) => value,
+            Err(_) => {return false } // invalid amount
+        };
+
+        //debug!("set amount: {}", amount);
+
+        let colour = set_part_components[1];
+
+        
+        let colour_limit = match limits.get(colour) {
+            Some(value) => value,
+            None => {return false } // colour limit not defined
+        };
+
+        if amount > *colour_limit {
+        
+            debug!("\t- limit for {} exceeded", colour);
+            return false;
+        }
+    }
+
+    return true;
+}
 
