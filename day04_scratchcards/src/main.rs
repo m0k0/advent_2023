@@ -9,6 +9,20 @@ fn main() {
     env::set_var("PRINT_DEBUG", "true");
 
 
+    let solution_part1 = get_solution_part1();
+    let solution_part2 = get_solution_part2();
+
+    println!("------------------------------------");
+    println!("Solution - Part 1: {}", solution_part1);
+    println!("Solution - Part 2: {}", solution_part2);
+
+}
+
+fn get_solution_part2() -> usize {
+    return 0;
+}
+
+fn get_solution_part1() -> usize {
     let mut solution = 0;
 
     for line in iterate_input(){
@@ -40,8 +54,10 @@ fn main() {
         }
     }
 
-    print!("Solution: {}", solution);
+    return solution; 
+
 }
+
 
 fn increment_card_value(
     current_value: usize)
