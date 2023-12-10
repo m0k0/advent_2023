@@ -17,6 +17,51 @@ struct Symbol {
     index: usize
 }
 
+
+fn get_gear_ratios(
+    symbols: &Vec<Symbol>, 
+    part_ids_in_range: &Vec<usize>,
+    parts_store: &Vec<PartNumber>) 
+    -> Vec<usize> {
+
+        let mut result: Vec<usize> = Vec::new();
+
+        for symbol in symbols {
+            debug!("symbol: {}", symbol.value); 
+
+            let mut adjacent_parts: Vec<&PartNumber> = Vec::new();
+
+            for part_id in part_ids_in_range {
+
+                let ref part = parts_store[*part_id];
+                if is_part_adjacent(&part, symbol.index) {
+                    adjacent_parts.push(&part);
+                }
+            }
+
+            if symbol.value == '*' && adjacent_parts.len() == 2 {
+                // is gear
+
+                debug!("gear found");
+
+                let mut gear_ratio = 1;
+                for part in adjacent_parts {
+                    let part_value = match part.value.parse() {
+                        Ok(v) => v,
+                        Err(_) => 0
+                    };
+                    gear_ratio = gear_ratio * part_value;
+                }
+                debug!("gear ratio: {}", gear_ratio);
+                result.push(gear_ratio);
+            }
+        }
+
+        return result;
+    }
+
+
+
 fn find_parts_adjacent_to_symbols(
     symbols: &Vec<Symbol>, 
     part_ids_in_range: &Vec<usize>,
@@ -68,32 +113,27 @@ fn is_part_adjacent(
         return false;
     }
 
-fn get_adjacent_part_ids(  
-    symbols_in_range: &Vec<Symbol>,
-    part_radar: &VecDeque<Vec<usize>>,
-    parts_store: &Vec<PartNumber>
-    )-> Vec<usize> {
+fn get_part_ids_in_range(
+    part_radar: &VecDeque<Vec<usize>>)
+    -> Vec<usize> {
 
-    let mut part_ids_in_range: Vec<usize> = Vec::new();
-    for i in 0..(RADAR_LINE_RANGE*2)+1 {
+        let mut part_ids_in_range: Vec<usize> = Vec::new();
+        for i in 0..(RADAR_LINE_RANGE*2)+1 {
 
-        if let Some(parts_on_line) = part_radar.get(i) {
-            //debug!("part_radar index: {}", i);
-            for part_id in parts_on_line {
+            if let Some(parts_on_line) = part_radar.get(i) {
+                //debug!("part_radar index: {}", i);
+                for part_id in parts_on_line {
 
-                //debug!("- part in range: {}", parts_store[*part_id].value);
-                part_ids_in_range.push(*part_id);
+                    //debug!("- part in range: {}", parts_store[*part_id].value);
+                    part_ids_in_range.push(*part_id);
+                }
             }
         }
+
+
+        return part_ids_in_range;
     }
 
-
-    let adjacent_part_ids = find_parts_adjacent_to_symbols(
-        symbols_in_range, &part_ids_in_range, parts_store);
-
-    return adjacent_part_ids; 
-
-}
 const PADDING_CHAR: char = '.';
 const RADAR_LINE_RANGE: usize = 1;
 
@@ -102,7 +142,7 @@ fn commit_part(
     line_pos: &usize,
     parts_store: &mut Vec<PartNumber>,
     line_part_radar: &mut Vec<usize>
-){
+    ){
     // commit part number buffer to store
     let part_buffer_len = part_buffer.len();
 
@@ -135,7 +175,7 @@ fn main() {
     let mut part_radar: VecDeque<Vec<usize>> = VecDeque::new(); 
     let mut symbol_radar: VecDeque<Vec<Symbol>> = VecDeque::new(); 
 
-
+    const IS_PART_TWO :bool = true;
 
     for (line_count, line) in iterate_input().enumerate() {
         debug!(line);
@@ -154,11 +194,24 @@ fn main() {
 
             if let Some(popped_symbols) = symbol_radar.pop_front() {
 
-                let adjacent = get_adjacent_part_ids(
-                    &popped_symbols, &part_radar, &parts_store);
+                let part_ids_in_range = get_part_ids_in_range(&part_radar);
 
-                for part_id in adjacent {
-                    parts_store[part_id].is_qualified = true;
+                if IS_PART_TWO {
+
+                    let gear_ratios = get_gear_ratios(
+                        &popped_symbols, &part_ids_in_range, &parts_store);
+
+                    for ratio in gear_ratios {
+                        parts_sum = parts_sum + ratio;
+                    }
+                } else {
+
+                    let adjacent_part_ids = find_parts_adjacent_to_symbols(
+                        &popped_symbols, &part_ids_in_range, &parts_store);
+
+                    for part_id in adjacent_part_ids {
+                        parts_store[part_id].is_qualified = true;
+                    }
                 }
             }
 
@@ -172,7 +225,7 @@ fn main() {
         let mut part_buffer = String::new(); 
 
 
-        
+
         for (line_pos, c) in line.chars().enumerate() {
 
             if c.is_numeric() {
@@ -221,35 +274,49 @@ fn main() {
 
         if let Some(popped_symbols) = symbol_radar.pop_front() {
 
-            let adjacent = get_adjacent_part_ids(
-                &popped_symbols, &part_radar, &parts_store);
+            let part_ids_in_range = get_part_ids_in_range(&part_radar);
 
-            for part_id in adjacent {
-                parts_store[part_id].is_qualified = true;
+            if IS_PART_TWO {
+
+                let gear_ratios = get_gear_ratios(
+                    &popped_symbols, &part_ids_in_range, &parts_store);
+
+                for ratio in gear_ratios {
+                    parts_sum = parts_sum + ratio;
+                }
+            } else {
+
+                let adjacent_part_ids = find_parts_adjacent_to_symbols(
+                    &popped_symbols, &part_ids_in_range, &parts_store);
+
+                for part_id in adjacent_part_ids {
+                    parts_store[part_id].is_qualified = true;
+                }
             }
         }
 
     }
 
     // sum up results
+    if !IS_PART_TWO {
+        for part in parts_store {
+            if part.is_qualified {
+                println!("  - qualified: {}", part.value);
 
-    for part in parts_store {
-        if part.is_qualified {
-            println!("  - qualified: {}", part.value);
+                let part_value = match part.value.parse() {
+                    Ok(v) => v,
+                    Err(_) => 0
+                };
 
-            let part_value = match part.value.parse() {
-                Ok(v) => v,
-                Err(_) => 0
-            };
+                if part_value == 0 {
+                    panic!("part value is zero {}", part.value);
+                }
 
-            if part_value == 0 {
-                panic!("part value is zero {}", part.value);
+
+                parts_sum = parts_sum + part_value;
+            } else {
+                println!("! - qualified: {}", part.value);
             }
-
-
-            parts_sum = parts_sum + part_value;
-        } else {
-            println!("! - qualified: {}", part.value);
         }
     }
 
