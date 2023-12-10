@@ -97,6 +97,32 @@ fn get_adjacent_part_ids(
 const PADDING_CHAR: char = '.';
 const RADAR_LINE_RANGE: usize = 1;
 
+fn commit_part(
+    part_buffer: String,
+    line_pos: &usize,
+    parts_store: &mut Vec<PartNumber>,
+    line_part_radar: &mut Vec<usize>
+){
+    // commit part number buffer to store
+    let part_buffer_len = part_buffer.len();
+
+    debug!("commit part: {}", part_buffer);
+    debug!("\tlen: {}", part_buffer_len);
+    debug!("\tline_pos: {}", line_pos);
+
+
+    let part = PartNumber {
+        value: part_buffer,
+        index: line_pos - part_buffer_len,
+        length: part_buffer_len,
+        is_qualified: false
+    };
+    parts_store.push(part);
+    let part_id = parts_store.len()-1;
+
+    line_part_radar.push(part_id);
+
+}
 
 fn main() {
 
@@ -145,6 +171,8 @@ fn main() {
 
         let mut part_buffer = String::new(); 
 
+
+        
         for (line_pos, c) in line.chars().enumerate() {
 
             if c.is_numeric() {
@@ -153,27 +181,11 @@ fn main() {
             } else {
 
                 if !part_buffer.is_empty() {
-                    // commit part number buffer to store
-                    let part_buffer_len = part_buffer.len();
-
-                    debug!("commit part: {}", part_buffer);
-                    debug!("\tlen: {}", part_buffer_len);
-                    debug!("\tline_pos: {}", line_pos);
-
-
-                    let part = PartNumber {
-                        value: part_buffer,
-                        index: line_pos - part_buffer_len,
-                        length: part_buffer_len,
-                        is_qualified: false
-                    };
-                    parts_store.push(part);
-                    let part_id = parts_store.len()-1;
-
-                    line_part_radar.push(part_id);
+                    commit_part(part_buffer.to_owned(), 
+                                &line_pos, 
+                                &mut parts_store, &mut line_part_radar);
                     part_buffer = String::new();
-                }
-
+                } 
 
                 if c != PADDING_CHAR {
                     // commit symbol to radar
@@ -188,6 +200,14 @@ fn main() {
             }
 
         }
+
+        if !part_buffer.is_empty() {
+            let line_lastpost = line.len() -1;
+            commit_part(part_buffer.to_owned(), 
+                        &line_lastpost, 
+                        &mut parts_store, &mut line_part_radar);
+        }
+
         part_radar.push_back(line_part_radar); 
         symbol_radar.push_back(line_symbol_radar);
     }
@@ -212,6 +232,7 @@ fn main() {
     }
 
     // sum up results
+
     for part in parts_store {
         if part.is_qualified {
             println!("  - qualified: {}", part.value);
@@ -220,6 +241,12 @@ fn main() {
                 Ok(v) => v,
                 Err(_) => 0
             };
+
+            if part_value == 0 {
+                panic!("part value is zero {}", part.value);
+            }
+
+
             parts_sum = parts_sum + part_value;
         } else {
             println!("! - qualified: {}", part.value);
