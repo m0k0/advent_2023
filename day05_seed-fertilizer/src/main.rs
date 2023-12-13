@@ -3,7 +3,7 @@ use crate::input::iterate_input;
 
 mod input;
 struct SeedMapEntry {
-    coverage_range: Range<usize>,
+    coverage_range: Range<i64>,
     dest_offset: i64
 }
 
@@ -20,9 +20,9 @@ impl SeedMapEntry {
             return None;
         }
 
-        let param_dest = params[0].parse::<usize>();
-        let param_source = params[1].parse::<usize>();
-        let param_length = params[2].parse::<usize>();
+        let param_dest = params[0].parse::<i64>();
+        let param_source = params[1].parse::<i64>();
+        let param_length = params[2].parse::<i64>();
 
         if param_dest.is_err() || param_source.is_err() || param_length.is_err() {
             return None; 
@@ -35,19 +35,19 @@ impl SeedMapEntry {
 
 
         let entry = Self {
-            dest_offset: (param_dest as i64) - (param_source as i64),
+            dest_offset: param_dest - param_source,
             coverage_range: param_source..(param_source + param_length - 1)
         };
 
 
 
-
+/*
         debug!("parsed: {}", definition_line);
         debug!("\toffset: {}", entry.dest_offset);
         debug!("\trange:");
         debug!("\t{}", entry.coverage_range.start);
         debug!("\t{}", entry.coverage_range.end);
-
+*/
         return Some(entry);
     }
 
@@ -76,7 +76,7 @@ impl SeedMap {
         return self.entries.iter(); 
     }
 
-    pub fn map_value(&self, source_value: usize) -> usize {
+    pub fn map_value(&self, source_value: i64) -> i64 {
 
 
         for map_entry in &self.entries {
@@ -84,7 +84,7 @@ impl SeedMap {
                 continue;
             }
 
-            return source_value + map_entry.dest_offset as usize;
+            return source_value + map_entry.dest_offset as i64;
         }
 
         return source_value;
@@ -92,13 +92,13 @@ impl SeedMap {
     }
 }
 
-fn parse_seeds(seed_line: &str) -> Vec<usize> {
+fn parse_seeds(seed_line: &str) -> Vec<i64> {
 
     let mut seeds = Vec::new();
     let seed_line_segments = seed_line.split(" ");
     for seed_line_segments in seed_line_segments {
 
-        let seed = seed_line_segments.parse::<usize>();
+        let seed = seed_line_segments.parse::<i64>();
         if seed.is_ok() {
             seeds.push(seed.unwrap());
         }
@@ -114,7 +114,7 @@ fn main() {
 
 
     // parse input into data structures
-    let mut seeds: Vec<usize> = Vec::new();
+    let mut seeds: Vec<i64> = Vec::new();
     let mut maps: HashMap<String, SeedMap> = HashMap::new();
 
     let mut is_first = true;
@@ -158,16 +158,58 @@ fn main() {
         current_map);
 
    
-    print_parsed_input(&seeds, &maps);
+    //print_parsed_input(&seeds, &maps);
 
 
-    // process input
-    //
-    
-    //
+    // process seeds
+
+    let solution = find_lowest_location(&seeds, &maps);
+
+    println!("Solution: {}", solution);
+
+   
 }
 
-fn print_parsed_input(seeds: &Vec<usize>, maps: &HashMap<String, SeedMap>) {
+fn find_lowest_location(seeds: &Vec<i64>, maps: &HashMap<String,SeedMap>)
+-> i64 {
+
+    let mut lowest_location = 0;
+    let map_chain = [
+        "seed-to-soil",
+        "soil-to-fertilizer",
+        "fertilizer-to-water",
+        "water-to-light",
+        "light-to-temperature",
+        "temperature-to-humidity",
+        "humidity-to-location",
+    ];
+
+    for seed in seeds {
+
+        let mut mapping_result = *seed;
+
+        for map_key in map_chain {
+
+            let map = match maps.get(map_key) {
+                Some(v)=> v,
+                None => { panic!("map '{}' not defined", map_key) }
+            };
+            
+            mapping_result = map.map_value(mapping_result);
+
+        }
+
+        if lowest_location == 0 || mapping_result < lowest_location {
+            lowest_location = mapping_result;
+        }
+
+    }
+    return lowest_location;
+
+}
+
+
+fn print_parsed_input(seeds: &Vec<i64>, maps: &HashMap<String, SeedMap>) {
     
     debug!("seeds:");
     for s in seeds {
