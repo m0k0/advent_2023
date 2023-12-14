@@ -1,4 +1,4 @@
-use std::{env, ops::Range, collections::HashMap, slice::Iter};
+use std::{env, ops::Range, slice::Iter};
 use crate::input::iterate_input;
 
 mod input;
@@ -41,13 +41,13 @@ impl SeedMapEntry {
 
 
 
-/*
-        debug!("parsed: {}", definition_line);
-        debug!("\toffset: {}", entry.dest_offset);
-        debug!("\trange:");
-        debug!("\t{}", entry.coverage_range.start);
-        debug!("\t{}", entry.coverage_range.end);
-*/
+        /*
+           debug!("parsed: {}", definition_line);
+           debug!("\toffset: {}", entry.dest_offset);
+           debug!("\trange:");
+           debug!("\t{}", entry.coverage_range.start);
+           debug!("\t{}", entry.coverage_range.end);
+           */
         return Some(entry);
     }
 
@@ -112,7 +112,7 @@ fn parse_seeds_part_two(seed_line: &str) -> Vec<Range<i64>> {
 
     let mut seeds = Vec::new();
     let seed_line_segments = seed_line.split(" ");
-    
+
     let mut current_seed_start = 0;
     let mut current_seed_length = 0;
 
@@ -126,15 +126,15 @@ fn parse_seeds_part_two(seed_line: &str) -> Vec<Range<i64>> {
 
         let is_seed_start = ix % 2 == 1; // first number is ix == 1
 
-            
+
         if is_seed_start {
             current_seed_start = number;
         } else {
             current_seed_length = number;
-           
+
             seeds.push(
                 current_seed_start..(current_seed_start + current_seed_length-1)
-            );
+                );
         }
 
     }
@@ -151,10 +151,9 @@ fn main() {
     // parse input into data structures
     let mut seeds: Vec<i64> = Vec::new();
     let mut seed_ranges: Vec<Range<i64>> = Vec::new();
-    let mut maps: HashMap<String, SeedMap> = HashMap::new();
+    let mut maps: Vec<SeedMap> = Vec::new();
 
     let mut is_first = true;
-    let mut current_map_name = String::new();
     let mut current_map = SeedMap::new();
 
     for line in iterate_input() {
@@ -171,14 +170,10 @@ fn main() {
 
             if !is_first {
                 // commit completed map
-                maps.insert(
-                    current_map_name,
-                    current_map);
-
+                maps.push(current_map);
                 current_map = SeedMap::new();
 
             }
-            current_map_name = line.replace(" map:", "");
             is_first = false;
 
             continue;
@@ -186,40 +181,37 @@ fn main() {
 
         // try parse map entry 
         if let Some(entry) = SeedMapEntry::parse(line.as_str()) {
-
             current_map.add_entry(entry);
         }
     }
-    maps.insert(
-        current_map_name,
-        current_map);
+    maps.push(current_map);
 
-   
+
     print_parsed_input(&seeds, &maps);
-    
+
 
 
     // process seeds
 
     let solution_part1 = find_lowest_location(&seeds, &maps);
     println!("Solution 1: {}", solution_part1);
-    
+
     let solution_part2 = find_lowest_location_range(&seed_ranges, &maps);
     println!("Solution 2: {}", solution_part2);
-   
+
 }
 
 fn find_lowest_location_range(
     seed_ranges: &Vec<Range<i64>>, 
-    maps: &HashMap<String,SeedMap>) -> i64 {
-    
+    maps: &Vec<SeedMap>) -> i64 {
+
     let mut lowest_location = 0;
-    
+
     for range in seed_ranges {
         println!("Starting seed range: {}", range.start);
 
         for seed in range.start..range.end {
-             
+
             let mapping_result = map_seed_to_location(&seed, maps);
 
             if lowest_location == 0 || mapping_result < lowest_location {
@@ -231,47 +223,33 @@ fn find_lowest_location_range(
     return lowest_location;
 }
 
-fn find_lowest_location(seeds: &Vec<i64>, maps: &HashMap<String,SeedMap>)
--> i64 {
+fn find_lowest_location(seeds: &Vec<i64>, maps: &Vec<SeedMap>)
+    -> i64 {
 
-    let mut lowest_location = 0;
-    for seed in seeds {
-        
-        let mapping_result = map_seed_to_location(seed, maps);
+        let mut lowest_location = 0;
+        for seed in seeds {
 
-        if lowest_location == 0 || mapping_result < lowest_location {
-            lowest_location = mapping_result;
+            let mapping_result = map_seed_to_location(seed, maps);
+
+            if lowest_location == 0 || mapping_result < lowest_location {
+                lowest_location = mapping_result;
+            }
+
         }
+        return lowest_location;
 
     }
-    return lowest_location;
-
-}
 
 fn map_seed_to_location(
     seed: &i64, 
-    maps: &HashMap<String,SeedMap>
-) -> i64 {
-    
+    maps: &Vec<SeedMap>
+    ) -> i64 {
 
-    let map_chain = [
-        "seed-to-soil",
-        "soil-to-fertilizer",
-        "fertilizer-to-water",
-        "water-to-light",
-        "light-to-temperature",
-        "temperature-to-humidity",
-        "humidity-to-location",
-    ];
 
     let mut mapping_result = *seed;
- 
-    for map_key in map_chain {
-        let map = match maps.get(map_key) {
-            Some(v)=> v,
-            None => { panic!("map '{}' not defined", map_key) }
-        };
-        
+
+    for map in maps {
+
         mapping_result = map.map_value(mapping_result);
 
     }
@@ -280,25 +258,23 @@ fn map_seed_to_location(
 }
 
 
-fn print_parsed_input(seeds: &Vec<i64>, maps: &HashMap<String, SeedMap>) {
-    
+fn print_parsed_input(seeds: &Vec<i64>, maps: &Vec<SeedMap>) {
+
     debug!("seeds:");
     for s in seeds {
         debug!(s);
     }
-    
-    for map_key in maps.keys() {
 
-        debug!("{} map:", map_key);
+    for (ix, map) in maps.iter().enumerate() {
 
-        for seed_map in maps.get(map_key) {
-            for entry in seed_map.iterate_entries() {
-                
-                debug!("\toffset: {}", entry.dest_offset);
-                debug!("\trange:");
-                debug!("\t{}", entry.coverage_range.start);
-                debug!("\t{}", entry.coverage_range.end);
-            }
+        debug!("map [{}]:", ix);
+
+        for entry in map.iterate_entries() {
+
+            debug!("\toffset: {}", entry.dest_offset);
+            debug!("\trange:");
+            debug!("\t{}", entry.coverage_range.start);
+            debug!("\t{}", entry.coverage_range.end);
         }
 
     }
