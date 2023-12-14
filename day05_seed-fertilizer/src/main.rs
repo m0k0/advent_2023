@@ -108,13 +108,49 @@ fn parse_seeds(seed_line: &str) -> Vec<i64> {
 }
 
 
+fn parse_seeds_part_two(seed_line: &str) -> Vec<Range<i64>> {
+
+    let mut seeds = Vec::new();
+    let seed_line_segments = seed_line.split(" ");
+    
+    let mut current_seed_start = 0;
+    let mut current_seed_length = 0;
+
+    for (ix, seed_line_segments) in seed_line_segments.enumerate() {
+
+
+        let number = match seed_line_segments.parse::<i64>() {
+            Ok(v) => v,
+            Err(_) => { continue }//{ panic!("Invalid seed value: {}", e) }
+        };
+
+        let is_seed_start = ix % 2 == 1; // first number is ix == 1
+
+            
+        if is_seed_start {
+            current_seed_start = number;
+        } else {
+            current_seed_length = number;
+           
+            seeds.push(
+                current_seed_start..(current_seed_start + current_seed_length-1)
+            );
+        }
+
+    }
+
+    return seeds;
+}
+
+
 fn main() {
 
-    env::set_var("PRINT_DEBUG", "true"); 
+    //env::set_var("PRINT_DEBUG", "true"); 
 
 
     // parse input into data structures
     let mut seeds: Vec<i64> = Vec::new();
+    let mut seed_ranges: Vec<Range<i64>> = Vec::new();
     let mut maps: HashMap<String, SeedMap> = HashMap::new();
 
     let mut is_first = true;
@@ -126,6 +162,7 @@ fn main() {
         // seed definition
         if line.starts_with("seeds:") {
             seeds = parse_seeds(line.as_str());
+            seed_ranges = parse_seeds_part_two(line.as_str());
             continue;
         }
 
@@ -158,22 +195,65 @@ fn main() {
         current_map);
 
    
-    //print_parsed_input(&seeds, &maps);
+    print_parsed_input(&seeds, &maps);
+    
 
 
     // process seeds
 
-    let solution = find_lowest_location(&seeds, &maps);
-
-    println!("Solution: {}", solution);
-
+    let solution_part1 = find_lowest_location(&seeds, &maps);
+    println!("Solution 1: {}", solution_part1);
+    
+    let solution_part2 = find_lowest_location_range(&seed_ranges, &maps);
+    println!("Solution 2: {}", solution_part2);
    
+}
+
+fn find_lowest_location_range(
+    seed_ranges: &Vec<Range<i64>>, 
+    maps: &HashMap<String,SeedMap>) -> i64 {
+    
+    let mut lowest_location = 0;
+    
+    for range in seed_ranges {
+        println!("Starting seed range: {}", range.start);
+
+        for seed in range.start..range.end {
+             
+            let mapping_result = map_seed_to_location(&seed, maps);
+
+            if lowest_location == 0 || mapping_result < lowest_location {
+                lowest_location = mapping_result;
+            }
+        }
+    }
+
+    return lowest_location;
 }
 
 fn find_lowest_location(seeds: &Vec<i64>, maps: &HashMap<String,SeedMap>)
 -> i64 {
 
     let mut lowest_location = 0;
+    for seed in seeds {
+        
+        let mapping_result = map_seed_to_location(seed, maps);
+
+        if lowest_location == 0 || mapping_result < lowest_location {
+            lowest_location = mapping_result;
+        }
+
+    }
+    return lowest_location;
+
+}
+
+fn map_seed_to_location(
+    seed: &i64, 
+    maps: &HashMap<String,SeedMap>
+) -> i64 {
+    
+
     let map_chain = [
         "seed-to-soil",
         "soil-to-fertilizer",
@@ -184,28 +264,19 @@ fn find_lowest_location(seeds: &Vec<i64>, maps: &HashMap<String,SeedMap>)
         "humidity-to-location",
     ];
 
-    for seed in seeds {
-
-        let mut mapping_result = *seed;
-
-        for map_key in map_chain {
-
-            let map = match maps.get(map_key) {
-                Some(v)=> v,
-                None => { panic!("map '{}' not defined", map_key) }
-            };
-            
-            mapping_result = map.map_value(mapping_result);
-
-        }
-
-        if lowest_location == 0 || mapping_result < lowest_location {
-            lowest_location = mapping_result;
-        }
+    let mut mapping_result = *seed;
+ 
+    for map_key in map_chain {
+        let map = match maps.get(map_key) {
+            Some(v)=> v,
+            None => { panic!("map '{}' not defined", map_key) }
+        };
+        
+        mapping_result = map.map_value(mapping_result);
 
     }
-    return lowest_location;
 
+    return mapping_result;
 }
 
 
