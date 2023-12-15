@@ -12,11 +12,13 @@ fn main() {
 
     let mut line = input.next().unwrap();
 
-    let times = parse_numbers::<usize>(line);
+    //let times = parse_numbers::<usize>(line);
+    let times = parse_numbers_combined::<usize>(line);
     
     line = input.next().unwrap();
 
-    let distances = parse_numbers::<usize>(line);
+    //let distances = parse_numbers::<usize>(line);
+    let distances = parse_numbers_combined::<usize>(line);
 
     let mut solution = 1;
     for i in 0..times.len() {
@@ -75,6 +77,24 @@ fn calc_ways_to_win(time: usize, distance_record: usize) -> usize {
 }
 
 
+fn parse_numbers_combined<T>(text: String) -> Vec<T>
+where T: FromStr{
+
+    let line_components = text.split(":");
+    let mut results = Vec::new(); 
+
+    for component in line_components {
+        let component = component.replace(" ", "");
+
+        if let Ok(component_num) = component.parse::<T>() {
+            results.push(component_num);
+
+        }
+    }
+ 
+
+    return results;
+}
 fn parse_numbers<T>(text: String) -> Vec<T>
 where T: FromStr{
 
