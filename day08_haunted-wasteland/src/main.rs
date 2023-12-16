@@ -19,7 +19,7 @@ fn main() {
 
     env::set_var("PRINT_DEBUG", "true");
 
-    let solution = 0;
+    let mut solution = 0;
 
     let mut directions = Vec::new();
     let mut nodes = HashMap::new();
@@ -38,6 +38,33 @@ fn main() {
     }
     
     print_parsed_data(&directions, &nodes);
+
+
+    // walk 
+    let mut current_node = "AAA";
+    let mut steps = 0;
+    while current_node != "ZZZ" {
+        
+        let node_entry = match nodes.get(current_node) {
+            Some(v) => v,
+            None => { panic!("Node '{}' isn't on the map", current_node)}
+        };
+
+        let direction_ix = steps % directions.len();
+        let direction = directions[direction_ix];
+
+        if direction == NODE_DIRECTION_LEFT {
+            current_node = node_entry.left.as_str();
+        } else if direction == NODE_DIRECTION_RIGHT {
+            current_node = node_entry.right.as_str();
+        } else {
+            panic!("Invalid direction at step {}", steps);
+        }
+        
+        steps += 1;
+    }
+
+    solution = steps;
 
     print!("Solution: {}", solution);
 }
