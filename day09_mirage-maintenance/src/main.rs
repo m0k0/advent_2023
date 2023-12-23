@@ -9,6 +9,7 @@ fn main() {
     env::set_var("PRINT_DEBUG", "true");
  
     let mut solution = 0;
+    let mut solution_part_two = 0;
 
     for (line_ix, line) in iterate_input().enumerate() {
 
@@ -23,17 +24,22 @@ fn main() {
             line_sequence.push(parsed_segment);
         }
 
-        let next_value = calc_next_value(&line_sequence);
+        let next_value = calc_next_value(&line_sequence, false);
         solution += next_value; 
+
+        let next_value_part_two = calc_next_value(&line_sequence, true);
+        solution_part_two += next_value_part_two;
+
         debug!(line);
-        debug!("next: {}", next_value);
+        debug!("nvp2: {}", next_value_part_two);
     }
 
     println!("Solution: {}", solution);
+    println!("Solution: {}", solution_part_two);
+
 }
 
-
-fn calc_next_value(sequence: &Vec<isize>) -> isize {
+fn calc_next_value(sequence: &Vec<isize>, left_side: bool) -> isize {
     
     let reduced_sequence = calc_reduced_sequence(sequence);
     
@@ -46,21 +52,38 @@ fn calc_next_value(sequence: &Vec<isize>) -> isize {
         }
     }
 
-    let last_value = match sequence.last() {
+
+    let sequence_value;
+    let reduced_sequence_value;
+    if left_side {
+        sequence_value = sequence.first();
+        reduced_sequence_value = reduced_sequence.first();
+    } else {
+        sequence_value = sequence.last();
+        reduced_sequence_value = reduced_sequence.last();
+    }
+
+
+    let sequence_value = match sequence_value {
         Some(v) => *v,
         None => 0
     };
 
-    let mut last_value_reduced = match reduced_sequence.last() {
+    let mut reduced_sequence_value = match reduced_sequence_value {
         Some(v) => *v,
         None => 0
     };
 
     if !is_all_zero {
-        last_value_reduced = calc_next_value(&reduced_sequence);
+        reduced_sequence_value = calc_next_value(&reduced_sequence, left_side);
     }
 
-    let next_value = last_value + last_value_reduced;
+    let next_value;
+    if left_side {
+        next_value = sequence_value - reduced_sequence_value;
+    } else {
+        next_value = sequence_value + reduced_sequence_value;
+    }
 
     return next_value;
 
