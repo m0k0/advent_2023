@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, fmt::format};
 
 use input::iterate_input;
 
@@ -12,6 +12,18 @@ const PIPE_SOUTH_WEST: char = '7';
 const PIPE_SOUTH_EAST: char = 'F';
 const PIPE_GROUND: char = '.';
 const PIPE_ANIMAL: char = 'S';
+
+
+struct Coord2D {
+    x: usize,
+    y: usize
+}
+impl std::fmt::Display for Coord2D {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        return write!("x: {}, y: {}", self.x, self.y);
+    }
+}
+
 
 struct Matrix<T> {
     data: Vec<Vec<Option<T>>>,
@@ -80,27 +92,33 @@ fn main() {
     env::set_var("PRINT_DEBUG", "true"); 
 
     let mut grid: Matrix<char> = Matrix::new();
+    let mut animal_coord: Coord2D;
 
     for (row_ix, line) in iterate_input().enumerate() {
-        
         for (col_ix, c) in line.chars().enumerate() {
             grid.set_value(col_ix, row_ix, c);
+            if c == PIPE_ANIMAL {
+                animal_coord = Coord2D { x: col_ix, y: row_ix };
+            }
         }
     }
+    print_grid(&grid);
+    
+    debug!("The animal is at {}", animal_coord);
+}
+
+fn print_grid(grid: &Matrix<char>) {
 
     for y in 0..grid.height {
         for x in 0..grid.width {
-            let c = match grid.get_value(x, y) {
-                Some(v) => *v,
-                None => ' '
-            };
 
-            print!("{}", c);
+            if let Some(v) = grid.get_value(x, y) {
+                print!("{}",v);
+            } else {
+                print!(" ");
+            }
         }
+
         print!("\n");
     }
-
 }
-
-
-
