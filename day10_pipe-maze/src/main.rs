@@ -1,4 +1,4 @@
-use std::{env, fmt::format};
+use std::{env, collections::HashMap};
 
 use input::iterate_input;
 
@@ -14,13 +14,19 @@ const PIPE_GROUND: char = '.';
 const PIPE_ANIMAL: char = 'S';
 
 
+
 struct Coord2D {
-    x: usize,
-    y: usize
+    x: isize,
+    y: isize
+}
+impl Coord2D {
+    fn new(x: isize, y: isize) -> Self {
+        return Self { x, y }
+    }
 }
 impl std::fmt::Display for Coord2D {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        return write!("x: {}, y: {}", self.x, self.y);
+        write!(f, "x: {}, y: {}", self.x, self.y)
     }
 }
 
@@ -92,19 +98,69 @@ fn main() {
     env::set_var("PRINT_DEBUG", "true"); 
 
     let mut grid: Matrix<char> = Matrix::new();
-    let mut animal_coord: Coord2D;
+    let mut score_grid: Matrix<usize> = Matrix::new();
+
+    let mut animal_coord: Option<Coord2D> = None;
 
     for (row_ix, line) in iterate_input().enumerate() {
         for (col_ix, c) in line.chars().enumerate() {
             grid.set_value(col_ix, row_ix, c);
             if c == PIPE_ANIMAL {
-                animal_coord = Coord2D { x: col_ix, y: row_ix };
+                animal_coord = Some (
+                    Coord2D { x: col_ix as isize, y: row_ix as isize }
+                );
             }
         }
     }
     print_grid(&grid);
+   
+    if animal_coord.is_some() {
+        debug!("The animal is at {}", animal_coord.unwrap());
+    } else {
+        panic!("No animal found");
+    }
+}
+
+fn get_available_moves(c: char) -> Vec<Coord2D> {
     
-    debug!("The animal is at {}", animal_coord);
+    let mut moves = Vec::new();
+
+    // west
+    if c == PIPE_ANIMAL || c == PIPE_EAST_WEST || c == PIPE_NORTH_WEST || c == PIPE_SOUTH_WEST {
+        moves.push(Coord2D::new(-1, 0));
+    }
+    // south
+    if c == PIPE_ANIMAL || c == PIPE_NORTH_SOUTH || c == PIPE_SOUTH_EAST || c == PIPE_SOUTH_WEST {
+        moves.push(Coord2D::new(0, 1));
+    }
+    // east
+    if c == PIPE_ANIMAL || c == PIPE_EAST_WEST || c == PIPE_NORTH_EAST || c == PIPE_SOUTH_EAST{
+        moves.push(Coord2D::new(1, 0));
+    }
+    // north
+    if c == PIPE_ANIMAL || c == PIPE_NORTH_EAST || c == PIPE_NORTH_WEST || c == PIPE_NORTH_SOUTH {
+        moves.push(Coord2D::new(0, -1));  
+    }
+
+    return moves;
+}
+
+fn walk_path(grid: &Matrix<char>, start: Coord2D) {
+    
+    let c = match grid.get_value(start.x as usize, start.y as usize) {
+        Some(v) => *v,
+        None => return
+    };
+    
+    let moves = get_available_moves(c);
+
+    for m in moves {
+        
+
+        
+    }
+
+    walk_path(grid, start)
 }
 
 fn print_grid(grid: &Matrix<char>) {
