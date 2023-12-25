@@ -14,7 +14,9 @@ const PIPE_GROUND: char = '.';
 const PIPE_ANIMAL: char = 'S';
 
 struct Matrix<T> {
-    data: Vec<Vec<Option<T>>>    
+    data: Vec<Vec<Option<T>>>,
+    width: usize,
+    height: usize
 }
 
 impl<T> Matrix<T> {
@@ -30,7 +32,8 @@ impl<T> Matrix<T> {
             None => return None
         };
 
-        let value = match *cell {
+
+        let value = match cell {
             Some(v) => v,
             None => return None
         };
@@ -44,13 +47,20 @@ impl<T> Matrix<T> {
             self.data.push(Vec::new());
         }
 
-        let mut row = match self.data.get(y) {
+        let row = match self.data.get_mut(y) {
             Some(v) => v,
             None => panic!("Out of bounds")
         };
-        
+         
         while row.len() <= x {
             row.push(None);
+        }
+
+        if self.width < row.len() {
+            self.width = row.len();
+        }
+        if self.height < self.data.len() {
+            self.height = self.data.len();
         }
         
         self.data[y][x] = Some(value); 
@@ -58,7 +68,9 @@ impl<T> Matrix<T> {
 
     fn new() -> Self {
         return Self {
-            data: Vec::new()
+            data: Vec::new(),
+            width: 0,
+            height: 0
         }
     }
 }
@@ -74,6 +86,18 @@ fn main() {
         for (col_ix, c) in line.chars().enumerate() {
             grid.set_value(col_ix, row_ix, c);
         }
+    }
+
+    for y in 0..grid.height {
+        for x in 0..grid.width {
+            let c = match grid.get_value(x, y) {
+                Some(v) => *v,
+                None => ' '
+            };
+
+            print!("{}", c);
+        }
+        print!("\n");
     }
 
 }
