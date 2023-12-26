@@ -1,4 +1,4 @@
-use std::{env, collections::HashMap, fmt::Display};
+use std::{env, collections::{HashMap, VecDeque}, fmt::Display};
 
 use input::iterate_input;
 
@@ -146,7 +146,7 @@ fn main() {
 
     debug!("The animal is at {}", animal_coord);
 
-    walk_path(&grid, &mut score_grid, animal_coord, 0);
+    walk_path_iter(&grid, &mut score_grid, animal_coord);
 
     print_grid(&score_grid);
 
@@ -178,6 +178,100 @@ fn get_available_moves(c: char) -> Vec<Coord2D> {
 
     return moves;
 }
+
+fn walk_path_iter(
+    grid: &Matrix<char>, 
+    score_grid: &mut Matrix<usize>,
+    start_position: Coord2D) {
+
+
+    let mut movement_queue: VecDeque<Coord2D> = VecDeque::new();
+    score_grid.set_value(start_position.x as usize, start_position.y as usize, 0); 
+    movement_queue.push_back(start_position);
+    
+    while let Some(position) = movement_queue.pop_front() {
+         
+        debug!("Walking at {}", position);
+
+        let c = match grid.get_value(position.x as usize, position.y as usize) {
+            Some(v) => *v,
+            None => return
+        };
+
+        let c_steps = match score_grid.get_value(position.x as usize, position.y as usize) {
+            Some(v) => *v,
+            None => 0
+        };
+
+        let moves = get_available_moves(c);
+
+        for m in moves {
+
+            debug!(format!("move: {}; from: {}", m, position));
+
+            let new_position = position.combine(&m);
+
+            if new_position.x < 0 || 
+                new_position.y < 0 || 
+                new_position.x >= grid.width as isize || 
+                new_position.y >= grid.height as isize 
+            {
+                
+                debug!("invalid; out of bounds");
+                continue; // invalid move; out of bounds
+            }
+    
+            // check if the next position is valid and has a connection to current position
+            if let Some(new_c) = grid.get_value(new_position.x as usize, new_position.y as usize){
+                if *new_c == PIPE_GROUND {
+                    debug!("invalid; impassable");
+                    continue;
+                };
+
+                debug!("\t new_c: {}", *new_c);
+                let new_moves = get_available_moves(*new_c);
+
+                let mut has_connection = false;
+                for new_m in new_moves {
+                    let backtraced_position = new_position.combine(&new_m);
+                    if backtraced_position == position {
+                        has_connection = true;
+                        break;
+                    }
+                }
+
+                if !has_connection {
+                    debug!("invalid; no connection to current position");
+                    continue;
+                }
+            } else {
+                debug!("invalid; requested value not on grid");
+            }
+
+            // attempt to step
+            let new_steps = c_steps + 1;
+           
+            if let Some(recorded_steps) = score_grid.get_value(new_position.x as usize, new_position.y as usize) {
+                if *recorded_steps < new_steps {
+                    debug!("invalid; already recorded with fewer steps");
+                    continue; // new position already scored
+                }
+            }
+           
+            // success
+            score_grid.set_value(new_position.x as usize, new_position.y as usize, new_steps);
+
+            movement_queue.push_back(new_position);
+            
+            debug!("steps: {}", new_steps);
+
+        }
+
+    }
+
+
+}
+
 
 fn walk_path(
     grid: &Matrix<char>, 
@@ -253,9 +347,9 @@ fn print_grid<T>(grid: &Matrix<T>) where T: Display {
         for x in 0..grid.width {
 
             if let Some(v) = grid.get_value(x, y) {
-                print!("{}",v);
+                print!("{}|",v);
             } else {
-                print!(" ");
+                print!(" |");
             }
         }
 
