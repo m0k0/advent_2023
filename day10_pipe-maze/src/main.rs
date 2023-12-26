@@ -1,4 +1,4 @@
-use std::{env, collections::HashMap};
+use std::{env, collections::HashMap, fmt::Display};
 
 use input::iterate_input;
 
@@ -23,13 +23,37 @@ impl Coord2D {
     fn new(x: isize, y: isize) -> Self {
         return Self { x, y }
     }
+
+    fn combine(&self, other: &Coord2D) -> Coord2D {
+        return Coord2D::new(self.x + other.x, self.y + other.y);
+    }
+}
+impl Clone for Coord2D {
+    
+    fn clone(&self) -> Self {
+        return Coord2D::new(self.x, self.y);
+    }
+
 }
 impl std::fmt::Display for Coord2D {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "x: {}, y: {}", self.x, self.y)
     }
 }
+impl std::ops::Add<Coord2D> for Coord2D{
+    type Output = Self;
 
+    fn add(self, rhs: Coord2D) -> Self::Output {
+        return Coord2D::new(self.x + rhs.x, self.y + rhs.y);
+    } 
+}
+impl PartialEq for Coord2D {
+
+    fn eq(&self, other: &Self) -> bool {
+        return self.x == other.x && self.y == other.y;
+    }
+
+}
 
 struct Matrix<T> {
     data: Vec<Vec<Option<T>>>,
@@ -113,12 +137,22 @@ fn main() {
         }
     }
     print_grid(&grid);
-   
-    if animal_coord.is_some() {
-        debug!("The animal is at {}", animal_coord.unwrap());
-    } else {
-        panic!("No animal found");
-    }
+ 
+
+    let animal_coord = match animal_coord {
+        Some(v) => v,
+        None => panic!("No animal found")
+    };
+
+    debug!("The animal is at {}", animal_coord);
+
+    walk_path(&grid, &mut score_grid, animal_coord, 0);
+
+    print_grid(&score_grid);
+
+    let solution = get_highest_steps(&score_grid);
+
+    println!("Solution: {}", solution);
 }
 
 fn get_available_moves(c: char) -> Vec<Coord2D> {
@@ -145,25 +179,75 @@ fn get_available_moves(c: char) -> Vec<Coord2D> {
     return moves;
 }
 
-fn walk_path(grid: &Matrix<char>, start: Coord2D) {
+fn walk_path(
+    grid: &Matrix<char>, 
+    score_grid: &mut Matrix<usize>,
+    position: Coord2D, 
+    steps: usize) {
     
-    let c = match grid.get_value(start.x as usize, start.y as usize) {
+
+    debug!("Walking at {}", position);
+
+    let c = match grid.get_value(position.x as usize, position.y as usize) {
         Some(v) => *v,
         None => return
     };
     
-    let moves = get_available_moves(c);
-
-    for m in moves {
-        
-
-        
+    if c == PIPE_GROUND {
+        debug!("invalid; impassable");
+        return;
     }
 
-    walk_path(grid, start)
+    let moves = get_available_moves(c);
+
+    // record position
+    score_grid.set_value(position.x as usize, position.y as usize, steps); 
+
+    for m in moves {
+
+        debug!(format!("move: {}; from: {}", m, position));
+
+        let new_position = position.combine(&m);
+
+        if new_position.x < 0 || new_position.y < 0 || new_position.x >= grid.width as isize || new_position.y >= grid.height as isize {
+            
+            debug!("invalid; out of bounds");
+            continue; // invalid move; out of bounds
+        }
+
+        let new_steps = steps + 1;
+       
+        if let Some(recorded_steps) = score_grid.get_value(new_position.x as usize, new_position.y as usize) {
+            if *recorded_steps < new_steps {
+                debug!("invalid; already recorded with fewer steps");
+                continue; // new position already scored
+            }
+        }
+
+        debug!("steps: {}", new_steps);
+
+        walk_path(grid, score_grid, new_position, new_steps);
+    }
+
 }
 
-fn print_grid(grid: &Matrix<char>) {
+fn get_highest_steps(score_grid: &Matrix<usize>) -> usize{
+    
+    let mut highest_steps = 0;
+    for row in score_grid.data.iter() {
+        for cell in row.iter() {
+            if let Some(cell_steps) = cell {
+                if *cell_steps > highest_steps {
+                    highest_steps = *cell_steps;
+                }
+            }
+        }
+    }
+    
+    return highest_steps;
+}
+
+fn print_grid<T>(grid: &Matrix<T>) where T: Display {
 
     for y in 0..grid.height {
         for x in 0..grid.width {
