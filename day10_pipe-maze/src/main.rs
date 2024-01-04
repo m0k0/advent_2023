@@ -150,9 +150,19 @@ fn main() {
 
     print_grid(&score_grid);
 
-    let solution = get_highest_steps(&score_grid);
+    let solution_part1 = get_highest_steps(&score_grid);
 
-    println!("Solution: {}", solution);
+     
+
+    let clean_grid = get_clean_grid(&grid, &score_grid);
+    println!();
+    print_grid(&clean_grid);
+
+    let io_grid = get_inside_outside_grid(&clean_grid);
+    println!();
+    print_grid(&io_grid);
+
+    println!("Solution Part 1: {}", solution_part1);
 }
 
 fn get_available_moves(c: char) -> Vec<Coord2D> {
@@ -178,6 +188,81 @@ fn get_available_moves(c: char) -> Vec<Coord2D> {
 
     return moves;
 }
+
+fn get_available_moves_outside(c: char) -> Vec<Coord2D> {
+    
+    let mut moves = Vec::new();
+
+    // west
+    if c == PIPE_ANIMAL || c == PIPE_EAST_WEST || c == PIPE_NORTH_WEST || c == PIPE_SOUTH_WEST {
+        moves.push(Coord2D::new(-1, 0));
+    }
+    // south
+    if c == PIPE_ANIMAL || c == PIPE_NORTH_SOUTH || c == PIPE_SOUTH_EAST || c == PIPE_SOUTH_WEST {
+        moves.push(Coord2D::new(0, 1));
+    }
+    // east
+    if c == PIPE_ANIMAL || c == PIPE_EAST_WEST || c == PIPE_NORTH_EAST || c == PIPE_SOUTH_EAST{
+        moves.push(Coord2D::new(1, 0));
+    }
+    // north
+    if c == PIPE_ANIMAL || c == PIPE_NORTH_EAST || c == PIPE_NORTH_WEST || c == PIPE_NORTH_SOUTH {
+        moves.push(Coord2D::new(0, -1));  
+    }
+
+    return moves;
+}
+
+fn get_available_moves(c: char) -> Vec<Coord2D> {
+    
+    let mut moves = Vec::new();
+
+    // west
+    if c == PIPE_ANIMAL || c == PIPE_EAST_WEST || c == PIPE_NORTH_WEST || c == PIPE_SOUTH_WEST {
+        moves.push(Coord2D::new(-1, 0));
+    }
+    // south
+    if c == PIPE_ANIMAL || c == PIPE_NORTH_SOUTH || c == PIPE_SOUTH_EAST || c == PIPE_SOUTH_WEST {
+        moves.push(Coord2D::new(0, 1));
+    }
+    // east
+    if c == PIPE_ANIMAL || c == PIPE_EAST_WEST || c == PIPE_NORTH_EAST || c == PIPE_SOUTH_EAST{
+        moves.push(Coord2D::new(1, 0));
+    }
+    // north
+    if c == PIPE_ANIMAL || c == PIPE_NORTH_EAST || c == PIPE_NORTH_WEST || c == PIPE_NORTH_SOUTH {
+        moves.push(Coord2D::new(0, -1));  
+    }
+
+    return moves;
+}
+
+
+fn get_available_moves(c: char) -> Vec<Coord2D> {
+    
+    let mut moves = Vec::new();
+
+    // west
+    if c == PIPE_ANIMAL || c == PIPE_EAST_WEST || c == PIPE_NORTH_WEST || c == PIPE_SOUTH_WEST {
+        moves.push(Coord2D::new(-1, 0));
+    }
+    // south
+    if c == PIPE_ANIMAL || c == PIPE_NORTH_SOUTH || c == PIPE_SOUTH_EAST || c == PIPE_SOUTH_WEST {
+        moves.push(Coord2D::new(0, 1));
+    }
+    // east
+    if c == PIPE_ANIMAL || c == PIPE_EAST_WEST || c == PIPE_NORTH_EAST || c == PIPE_SOUTH_EAST{
+        moves.push(Coord2D::new(1, 0));
+    }
+    // north
+    if c == PIPE_ANIMAL || c == PIPE_NORTH_EAST || c == PIPE_NORTH_WEST || c == PIPE_NORTH_SOUTH {
+        moves.push(Coord2D::new(0, -1));  
+    }
+
+    return moves;
+}
+
+
 
 fn walk_path_iter(
     grid: &Matrix<char>, 
@@ -273,57 +358,6 @@ fn walk_path_iter(
 }
 
 
-fn walk_path(
-    grid: &Matrix<char>, 
-    score_grid: &mut Matrix<usize>,
-    position: Coord2D, 
-    steps: usize) {
-    
-
-    debug!("Walking at {}", position);
-
-    let c = match grid.get_value(position.x as usize, position.y as usize) {
-        Some(v) => *v,
-        None => return
-    };
-    
-    if c == PIPE_GROUND {
-        debug!("invalid; impassable");
-        return;
-    }
-
-    let moves = get_available_moves(c);
-
-    // record position
-    score_grid.set_value(position.x as usize, position.y as usize, steps); 
-
-    for m in moves {
-
-        debug!(format!("move: {}; from: {}", m, position));
-
-        let new_position = position.combine(&m);
-
-        if new_position.x < 0 || new_position.y < 0 || new_position.x >= grid.width as isize || new_position.y >= grid.height as isize {
-            
-            debug!("invalid; out of bounds");
-            continue; // invalid move; out of bounds
-        }
-
-        let new_steps = steps + 1;
-       
-        if let Some(recorded_steps) = score_grid.get_value(new_position.x as usize, new_position.y as usize) {
-            if *recorded_steps < new_steps {
-                debug!("invalid; already recorded with fewer steps");
-                continue; // new position already scored
-            }
-        }
-
-        debug!("steps: {}", new_steps);
-
-        walk_path(grid, score_grid, new_position, new_steps);
-    }
-
-}
 
 fn get_highest_steps(score_grid: &Matrix<usize>) -> usize{
     
@@ -339,6 +373,65 @@ fn get_highest_steps(score_grid: &Matrix<usize>) -> usize{
     }
     
     return highest_steps;
+}
+
+fn get_clean_grid(grid: &Matrix<char>, score_grid: &Matrix<usize>) -> Matrix<char> {
+    
+    let mut clean_grid = Matrix::new();
+
+    for y in 0..score_grid.height {
+       
+        for x in 0..score_grid.width {
+
+            let cell = score_grid.get_value(x, y);
+
+            if cell.is_none() {
+                continue;
+            }
+            if let Some(c) = grid.get_value(x, y) {
+                clean_grid.set_value(x, y, *c);
+            }
+        }
+    }
+
+    return clean_grid;
+
+}
+
+fn get_outside_grid(clean_grid: &Matrix<char>) -> Matrix<char> {
+    
+    let mut outside_grid = Matrix::new();
+
+    clean
+
+    return outside_grid;
+}
+
+
+
+fn get_inside_outside_grid(clean_grid: &Matrix<char>) -> Matrix<char> {
+    
+    let mut io_grid = Matrix::new();
+
+    for y in 0..clean_grid.height {
+       
+        for x in 0..clean_grid.width {
+
+            let cell = clean_grid.get_value(x, y);
+
+            let c: char;
+            if cell.is_some() {
+                c = '.';
+            } else {
+                c = 'O';
+            }
+
+            io_grid.set_value(x, y, c);
+
+        }
+    }
+
+    return io_grid;
 }
 
 fn print_grid<T>(grid: &Matrix<T>) where T: Display {
