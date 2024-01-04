@@ -47,7 +47,15 @@ pub struct Matrix<T> {
 }
 
 impl<T> Matrix<T> 
-    where T : fmt::Display{
+    where T : fmt::Display + Copy{
+
+    pub fn height(&self) -> usize {
+        return self.height 
+    }
+
+    pub fn width(&self) -> usize {
+        return self.width; 
+    }
 
     pub fn get_value(&self, x: usize, y: usize) -> Option<&T> {
         let row = match self.data.get(y) {
@@ -69,7 +77,7 @@ impl<T> Matrix<T>
         return Some(&value);
     }
 
-    pub fn set_value(&mut self, x: usize, y: usize, value: T) {
+    fn allocate(&mut self, x: usize, y: usize ) {
 
         while self.data.len() <= y {
             self.data.push(Vec::new());
@@ -90,8 +98,17 @@ impl<T> Matrix<T>
         if self.height < self.data.len() {
             self.height = self.data.len();
         }
+    }
+
+    pub fn set_value(&mut self, x: usize, y: usize, value: T) {
         
+        self.allocate(x, y);
+
         self.data[y][x] = Some(value); 
+    }
+
+    pub fn insert_value(&mut self, x: usize, y: usize) {
+
     }
 
     pub fn new() -> Self {
@@ -99,6 +116,47 @@ impl<T> Matrix<T>
             data: Vec::new(),
             width: 0,
             height: 0
+        }
+    }
+
+    pub fn get_col_values(&self, x: usize) -> Vec<Option<&T>> {
+        
+        let mut col = Vec::new();
+
+        for y in 0..self.height {
+            col.push( self.get_value(x,y) );
+        }
+        return col;
+    }
+
+    pub fn get_row_values(&self, y:usize) -> Vec<Option<&T>> {
+         
+        let mut row = Vec::new();
+
+        for x in 0..self.width {
+            row.push( self.get_value(x,y) );
+        }
+        return row;
+    }
+
+    pub fn insert_row(&mut self, y: usize, row: Vec<Option<T>>) {
+        self.data.insert(y, row); 
+    }
+
+    pub fn insert_col(&mut self, x: usize, col: Vec<Option<T>>) {
+    
+        for y in 0..self.height {
+
+            let row = match self.data.get_mut(y) {
+                Some(v) => v,
+                None => panic!("Out of bounds")
+            };
+
+            if let Some(value) = col.get(y) {
+                row.insert(x, *value)
+            } else {
+                row.insert(x, None)
+            }
         }
     }
 
@@ -116,5 +174,6 @@ impl<T> Matrix<T>
 
             print!("\n");
         }
+        println!();
     }
 }
