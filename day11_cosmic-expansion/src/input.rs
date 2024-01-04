@@ -1,5 +1,7 @@
 use std::{fs::File, env::{self}, io::{BufReader,BufRead, Lines}};
 
+use crate::grid::Matrix;
+
 const ARGS_IX_INPUT : usize = 1;
 
 #[macro_export]
@@ -58,4 +60,19 @@ pub fn read_input_lines(input_file_path: String) -> Lines<BufReader<File>> {
     return input_file.lines();
 
 }
+
+
+pub fn input_as_grid() -> Matrix<char> { 
+    let mut grid = Matrix::new();
+    for (y, line) in iterate_input().enumerate() {
+
+        for (x, c) in line.chars().enumerate() {
+            
+            grid.set_value(x, y, c);
+        }
+    }
+    return grid;
+
+}
+
 

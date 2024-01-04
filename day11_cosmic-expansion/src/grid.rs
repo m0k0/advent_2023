@@ -1,4 +1,4 @@
-use std::{env, collections::{HashMap, VecDeque}, fmt::Display};
+use std::fmt;
 
 pub struct Coord2D {
     x: isize,
@@ -46,7 +46,8 @@ pub struct Matrix<T> {
     height: usize
 }
 
-impl<T> Matrix<T> {
+impl<T> Matrix<T> 
+    where T : fmt::Display{
 
     pub fn get_value(&self, x: usize, y: usize) -> Option<&T> {
         let row = match self.data.get(y) {
@@ -98,6 +99,22 @@ impl<T> Matrix<T> {
             data: Vec::new(),
             width: 0,
             height: 0
+        }
+    }
+
+    pub fn print_grid(&self) where {
+
+        for y in 0..self.height {
+            for x in 0..self.width {
+
+                if let Some(v) = self.get_value(x, y) {
+                    print!("{}|",v);
+                } else {
+                    print!(" |");
+                }
+            }
+
+            print!("\n");
         }
     }
 }
